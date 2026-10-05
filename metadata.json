@@ -1,0 +1,6 @@
+{
+  "name": "Bangla Quotes",
+  "description": "Beautiful Bangla Status and Quotes app with User App and Admin Panel",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

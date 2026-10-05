@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>বাণী ও স্ট্যাটাস - Bangla Quotes & Status</title>
+  
+  <!-- Favicon / Web App Icon -->
+  <link rel="icon" type="image/png" href="app-icon.png">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase Web SDK (Compat version for clean, direct, beginner-friendly vanilla JS) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand" onclick="handleBrandLogoClick()">
+        <div class="brand-icon">❝</div>
+        <div>
+          <span class="brand-title">বাণী ও স্ট্যাটাস</span>
+          <span class="brand-badge">বাংলা</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Search Trigger -->
+        <button class="icon-btn" onclick="switchTab('search')" title="অনুসন্ধান" aria-label="Search">
+          🔍
+        </button>
+        <!-- Dark Mode Toggle -->
+        <button class="icon-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="ডার্ক মোড" aria-label="Theme Toggle">
+          🌙
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-content">
+
+      <!-- ============================================== -->
+      <!-- TAB 1: HOME FEED -->
+      <!-- ============================================== -->
+      <section id="tab-home" class="tab-screen active">
+        <!-- Horizontal Scrollable Category Pills -->
+        <div class="category-scroll-container" id="home-category-pills">
+          <!-- Filled dynamically by JavaScript -->
+        </div>
+
+        <!-- Section Title & Post Count -->
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>✨</span> <span id="home-feed-title">নতুন স্ট্যাটাস</span>
+          </h2>
+          <span class="section-badge" id="home-posts-count">০টি স্ট্যাটাস</span>
+        </div>
+
+        <!-- Quotes Feed Container -->
+        <div class="quotes-list" id="home-quotes-container">
+          <!-- Quote cards will be inserted here -->
+          <div class="empty-state">
+            <div class="empty-icon">⏳</div>
+            <h3 class="empty-title">স্ট্যাটাস লোড হচ্ছে...</h3>
+            <p class="empty-desc">অনুগ্রহ করে কিছুক্ষণ অপেক্ষা করুন।</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 2: SEARCH -->
+      <!-- ============================================== -->
+      <section id="tab-search" class="tab-screen">
+        <div class="search-box-container">
+          <span class="search-icon-inside">🔍</span>
+          <input 
+            type="text" 
+            id="search-input" 
+            class="search-input" 
+            placeholder="স্ট্যাটাস, উক্তি বা বিষয় দিয়ে খুঁজুন..." 
+            oninput="handleSearch(this.value)"
+            autocomplete="off"
+          />
+          <button id="clear-search-btn" class="clear-search-btn" onclick="clearSearch()">✕</button>
+        </div>
+
+        <!-- Quick filter categories for search -->
+        <div class="category-scroll-container" id="search-category-pills">
+          <!-- Injected via JS -->
+        </div>
+
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🔎</span> <span id="search-result-title">ফলাফল</span>
+          </h2>
+          <span class="section-badge" id="search-result-count">০টি</span>
+        </div>
+
+        <!-- Search Results List -->
+        <div class="quotes-list" id="search-quotes-container">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 3: CATEGORIES GRID -->
+      <!-- ============================================== -->
+      <section id="tab-categories" class="tab-screen">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>📂</span> <span>সকল বিভাগসমূহ</span>
+          </h2>
+          <span class="section-badge" id="total-categories-badge">৯টি বিভাগ</span>
+        </div>
+
+        <!-- Category Grid -->
+        <div class="categories-grid" id="categories-grid-container">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 4: SAVED POSTS -->
+      <!-- ============================================== -->
+      <section id="tab-saved" class="tab-screen">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span>🔖</span> <span>সংরক্ষিত স্ট্যাটাস</span>
+          </h2>
+          <span class="section-badge" id="saved-posts-count">০টি সংরক্ষিত</span>
+        </div>
+
+        <div class="quotes-list" id="saved-quotes-container">
+          <!-- Injected via JS -->
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- TAB 5: ADMIN PANEL -->
+      <!-- ============================================== -->
+      <section id="tab-admin" class="tab-screen">
+        
+        <!-- View 5.1: Admin Login Screen (Shown when not authenticated) -->
+        <div id="admin-login-view" style="display: none;">
+          <div class="form-card" style="margin-top: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <div class="brand-icon" style="margin: 0 auto 12px; width: 48px; height: 48px; font-size: 26px;">🔐</div>
+              <h2 style="font-size: 20px; font-weight: 700;">অ্যাডমিন লগইন</h2>
+              <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
+                শুধুমাত্র অনুমোদিত অ্যাডমিন এই প্যানেলে প্রবেশ করতে পারেন
+              </p>
+            </div>
+
+            <div id="login-error-alert" style="display: none; padding: 10px 14px; background: #FEE2E2; color: #B91C1C; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 14px; font-weight: 600;">
+            </div>
+
+            <form onsubmit="handleAdminLogin(event)">
+              <div class="form-group">
+                <label class="form-label" for="admin-email">ইমেইল ঠিকানা</label>
+                <input type="email" id="admin-email" class="form-input" placeholder="admin@example.com" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="admin-password">পাসওয়ার্ড</label>
+                <input type="password" id="admin-password" class="form-input" placeholder="••••••••" required>
+              </div>
+
+              <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; font-size: 15px; margin-top: 10px;" id="login-submit-btn">
+                <span>লগইন করুন</span>
+              </button>
+
+              <button type="button" class="btn-secondary" style="width: 100%; padding: 10px; font-size: 13.5px; margin-top: 10px;" onclick="closeAdminPortal()">
+                ← ব্যবহারকারী অ্যাপে ফিরে যান
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- View 5.2: Admin Dashboard (Shown when logged in) -->
+        <div id="admin-dashboard-view" style="display: none;">
+          
+          <!-- Admin User Header Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 10px 14px; background: var(--bg-card); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">🛡️</span>
+              <div>
+                <div style="font-size: 14px; font-weight: 700;" id="admin-user-display">admin@example.com</div>
+                <div style="font-size: 11px; color: var(--accent-emerald); font-weight: 600;" id="admin-auth-status">● অ্যাডমিন সক্রিয়</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-secondary" style="padding: 5px 12px; font-size: 12px;" onclick="closeAdminPortal()">
+                ইউজার ভিউ 👁️
+              </button>
+              <button class="btn-secondary" style="padding: 5px 12px; font-size: 12px;" onclick="handleAdminLogout()">
+                লগআউট ✕
+              </button>
+            </div>
+          </div>
+
+          <!-- Metrics Grid -->
+          <div class="admin-metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon" style="background: var(--primary-light); color: var(--primary);">📝</div>
+              <div class="metric-info">
+                <span class="metric-value" id="metric-total-posts">০</span>
+                <span class="metric-label">মোট স্ট্যাটাস</span>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon" style="background: var(--accent-emerald-bg); color: var(--accent-emerald);">🟢</div>
+              <div class="metric-info">
+                <span class="metric-value" id="metric-published-posts">০</span>
+                <span class="metric-label">প্রকাশিত স্ট্যাটাস</span>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon" style="background: var(--accent-amber-bg); color: var(--accent-amber);">🟡</div>
+              <div class="metric-info">
+                <span class="metric-value" id="metric-draft-posts">০</span>
+                <span class="metric-label">ড্রাফট স্ট্যাটাস</span>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon" style="background: var(--accent-purple-bg); color: var(--accent-purple);">📂</div>
+              <div class="metric-info">
+                <span class="metric-value" id="metric-categories-count">০</span>
+                <span class="metric-label">মোট বিভাগ</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Sub-Navigation -->
+          <div class="admin-subnav">
+            <button class="admin-subnav-btn active" onclick="switchAdminTab('add-post')" id="admin-nav-add-post">
+              ➕ নতুন স্ট্যাটাস
+            </button>
+            <button class="admin-subnav-btn" onclick="switchAdminTab('manage-posts')" id="admin-nav-manage-posts">
+              📝 স্ট্যাটাস তালিকা
+            </button>
+            <button class="admin-subnav-btn" onclick="switchAdminTab('categories')" id="admin-nav-categories">
+              📂 বিভাগসমূহ
+            </button>
+            <button class="admin-subnav-btn" onclick="switchAdminTab('settings')" id="admin-nav-settings">
+              ⚙️ ফায়ারবেস সেটআপ
+            </button>
+          </div>
+
+          <!-- Sub-Tab 1: Add Post Form -->
+          <div id="admin-sub-add-post" class="admin-sub-content">
+            <div class="form-card">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">➕ নতুন স্ট্যাটাস তৈরি করুন</h3>
+              <form onsubmit="handleCreatePost(event)">
+                <div class="form-group">
+                  <label class="form-label" for="post-title">শিরোনাম (Title - ঐচ্ছিক)</label>
+                  <input type="text" id="post-title" class="form-input" placeholder="যেমন: জীবনের শিক্ষা, ভালোবাসার কথামালা">
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="post-content">স্ট্যাটাস / উক্তি (Status Text - আবশ্যক) *</label>
+                  <textarea id="post-content" class="form-textarea" placeholder="এখানে সুন্দর বাংলা স্ট্যাটাস বা উক্তি লিখুন... (এন্টার দিয়ে নতুন লাইন লিখতে পারেন)" required></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="post-category">বিভাগ নির্বাচন করুন (Category) *</label>
+                  <select id="post-category" class="form-select" required>
+                    <!-- Injected dynamically -->
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="post-image">ছবি যুক্ত করুন (ঐচ্ছিক - Image Upload)</label>
+                  <input type="file" id="post-image" class="form-input" accept="image/*" onchange="previewSelectedImage(this)">
+                  <div id="image-preview-container" class="img-preview-box">
+                    <img id="image-preview-img" src="" alt="Selected Preview">
+                    <button type="button" class="remove-img-btn" onclick="clearSelectedImage()">✕</button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">স্ট্যাটাস অবস্থা (Status)</label>
+                  <div class="radio-group">
+                    <label class="radio-label">
+                      <input type="radio" name="post-status" value="published" checked>
+                      <span>প্রকাশ করুন (Published)</span>
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" name="post-status" value="draft">
+                      <span>খসড়া হিসেবে রাখুন (Draft)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;" id="save-post-btn">
+                  <span>🚀 স্ট্যাটাস প্রকাশ করুন (Publish Post)</span>
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Sub-Tab 2: Manage Posts -->
+          <div id="admin-sub-manage-posts" class="admin-sub-content" style="display: none;">
+            <div style="margin-bottom: 14px; display: flex; gap: 8px;">
+              <input type="text" id="admin-post-filter" class="form-input" placeholder="খুঁজুন..." oninput="filterAdminPosts(this.value)" style="flex: 1;">
+              <select id="admin-category-filter" class="form-select" style="width: 130px;" onchange="filterAdminPostsByCategory(this.value)">
+                <option value="all">সকল বিভাগ</option>
+              </select>
+            </div>
+
+            <div id="admin-posts-container">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Sub-Tab 3: Category Management -->
+          <div id="admin-sub-categories" class="admin-sub-content" style="display: none;">
+            <div class="form-card">
+              <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">➕ নতুন বিভাগ যোগ করুন</h3>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="new-category-name" class="form-input" placeholder="বিভাগের নাম (যেমন: উপদেশ, একাকীত্ব)">
+                <button class="btn-primary" onclick="handleAddCategory()" style="white-space: nowrap;">যোগ করুন</button>
+              </div>
+            </div>
+
+            <div class="section-header">
+              <h3 class="section-title">বিদ্যমান বিভাগসমূহ</h3>
+              <button class="btn-secondary" style="font-size: 12px; padding: 4px 10px;" onclick="resetDefaultCategories()">
+                ডিফল্ট বিভাগ আনুন
+              </button>
+            </div>
+
+            <div id="admin-categories-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Sub-Tab 4: Settings & Firebase Setup Guide -->
+          <div id="admin-sub-settings" class="admin-sub-content" style="display: none;">
+            
+            <div class="form-card">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 16px; font-weight: 700;">🔥 ফায়ারবেস সংযোগ স্ট্যাটাস</h3>
+                <span id="firebase-connection-badge" class="badge-draft">চেক করা হচ্ছে...</span>
+              </div>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 14px;">
+                আপনি <code style="color: var(--primary);">firebase-config.js</code> ফাইলে সরাসরি কনফিগ বসাতে পারেন অথবা নিচের বক্সে পেস্ট করে সেভ করতে পারেন:
+              </p>
+
+              <div class="form-group">
+                <label class="form-label">Firebase Config JSON</label>
+                <textarea id="live-firebase-config-input" class="form-textarea" style="font-family: monospace; font-size: 12px; min-height: 110px;" placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "projectId": "...",\n  "storageBucket": "...",\n  "messagingSenderId": "...",\n  "appId": "..."\n}'></textarea>
+              </div>
+
+              <div style="display: flex; gap: 8px;">
+                <button class="btn-primary" style="flex: 1;" onclick="saveLiveFirebaseConfig()">
+                  সেভ করুন ও রিলোড নিন
+                </button>
+                <button class="btn-secondary" onclick="resetLiveFirebaseConfig()">
+                  রিসেট
+                </button>
+              </div>
+            </div>
+
+            <!-- Firebase Setup Instructions Guide -->
+            <div class="guide-card">
+              <h4 class="guide-step-title">১. ফায়ারবেস প্রজেক্ট তৈরি করুন</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                • <a href="https://console.firebase.google.com/" target="_blank" style="color: var(--primary); font-weight: 600;">Firebase Console</a>-এ যান।<br>
+                • <b>Add project</b>-এ ক্লিক করে আপনার প্রজেক্টের নাম দিন (যেমন: BanglaQuotes)।
+              </p>
+            </div>
+
+            <div class="guide-card">
+              <h4 class="guide-step-title">২. Authentication সক্রিয় করুন</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                • <b>Build &gt; Authentication</b>-এ যান এবং <b>Get started</b> ক্লিক করুন।<br>
+                • <b>Sign-in method</b> ট্যাবে গিয়ে <b>Anonymous</b> সক্রিয় (Enable) করুন (সাধারণ ব্যবহারকারীদের জন্য)।<br>
+                • <b>Email/Password</b> সক্রিয় করুন (অ্যাডমিন অ্যাকাউন্টের জন্য)।<br>
+                • <b>Users</b> ট্যাবে গিয়ে <b>Add user</b> দিয়ে আপনার অ্যাডমিন ইমেইল ও পাসওয়ার্ড তৈরি করুন।
+              </p>
+            </div>
+
+            <div class="guide-card">
+              <h4 class="guide-step-title">৩. Firestore Database তৈরি ও Security Rules</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                • <b>Build &gt; Firestore Database</b>-এ গিয়ে <b>Create database</b> ক্লিক করুন।<br>
+                • <b>Rules</b> ট্যাবে গিয়ে নিচের রুলসটি পেস্ট করুন:
+              </p>
+              <div class="code-box" id="firestore-rules-snippet">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is admin
+    // Replace YOUR_ADMIN_UID with the UID from Firebase Auth > Users tab
+    function isAdmin() {
+      return request.auth != null && 
+        (request.auth.uid == "YOUR_ADMIN_UID" || request.auth.token.email == "30atikul@gmail.com");
+    }
+
+    // Posts: Anyone can read published posts. Only admin can write.
+    match /posts/{postId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Categories: Anyone can read. Only admin can write.
+    match /categories/{catId} {
+      allow read: true;
+      allow write: if isAdmin();
+    }
+
+    // User Likes: Users can only read & write their own likes
+    match /userLikes/{likeId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // User Saved Posts: Users can only manage their own bookmarks
+    match /userSavedPosts/{saveId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+  }
+}</div>
+              <button class="btn-secondary" style="font-size: 12px; margin-top: 6px;" onclick="copyFirestoreRules()">
+                📋 রুলস কপি করুন
+              </button>
+            </div>
+
+            <div class="guide-card">
+              <h4 class="guide-step-title">৪. Firebase Storage সক্রিয় করুন</h4>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+                • <b>Build &gt; Storage</b>-এ গিয়ে <b>Get started</b> ক্লিক করুন।<br>
+                • স্ট্যাটাস ছবির জন্য Rules ট্যাবে <code>allow read: true; allow write: if request.auth != null;</code> দিয়ে Publish করুন।
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- ============================================== -->
+    <!-- MODAL: POST DETAILS MODAL -->
+    <!-- ============================================== -->
+    <div id="post-details-modal" class="modal-overlay" onclick="closeDetailsModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span class="category-tag" id="modal-category-tag">বিভাগ</span>
+          <button class="close-modal-btn" onclick="closeDetailsModal()">✕</button>
+        </div>
+
+        <div id="modal-img-container" style="display: none; margin-bottom: 16px;">
+          <img id="modal-image" src="" alt="Status" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: var(--radius-md);">
+        </div>
+
+        <h3 id="modal-title" style="font-size: 17px; font-weight: 700; margin-bottom: 10px; color: var(--text-secondary); display: none;"></h3>
+
+        <div class="quote-content" id="modal-content" style="font-size: 19px; line-height: 1.8; margin-bottom: 20px;">
+          <!-- Status text -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 13px; color: var(--text-muted);">
+          <span id="modal-date">তারিখ</span>
+          <span id="modal-likes-count">❤️ ০টি লাইক</span>
+        </div>
+
+        <!-- Action Buttons in Modal -->
+        <div class="card-actions" style="border-top: 1px solid var(--border-light); padding-top: 16px;">
+          <button class="action-btn" id="modal-like-btn" onclick="handleModalLike()">
+            <span class="icon">❤️</span> <span id="modal-like-text">লাইক</span>
+          </button>
+          <button class="action-btn" id="modal-save-btn" onclick="handleModalSave()">
+            <span class="icon">🔖</span> <span id="modal-save-text">সংরক্ষণ</span>
+          </button>
+          <button class="action-btn" onclick="handleModalCopy()">
+            <span class="icon">📋</span> <span>কপি টেক্সট</span>
+          </button>
+          <button class="action-btn" onclick="handleModalShare()">
+            <span class="icon">📤</span> <span>শেয়ার</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL: EDIT POST MODAL (ADMIN) -->
+    <!-- ============================================== -->
+    <div id="edit-post-modal" class="modal-overlay" onclick="closeEditModal(event)">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ স্ট্যাটাস এডিট করুন</h3>
+          <button class="close-modal-btn" onclick="closeEditModal()">✕</button>
+        </div>
+
+        <form onsubmit="handleUpdatePost(event)">
+          <input type="hidden" id="edit-post-id">
+          
+          <div class="form-group">
+            <label class="form-label" for="edit-post-title">শিরোনাম</label>
+            <input type="text" id="edit-post-title" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-post-content">স্ট্যাটাস টেক্সট *</label>
+            <textarea id="edit-post-content" class="form-textarea" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-post-category">বিভাগ *</label>
+            <select id="edit-post-category" class="form-select" required></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ছবি পরিবর্তন করুন (ঐচ্ছিক)</label>
+            <input type="file" id="edit-post-image" class="form-input" accept="image/*" onchange="previewEditImage(this)">
+            <div id="edit-image-preview-container" class="img-preview-box">
+              <img id="edit-image-preview-img" src="" alt="Edit Preview">
+              <button type="button" class="remove-img-btn" onclick="clearEditImage()">✕</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">স্ট্যাটাস অবস্থা</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="edit-post-status" value="published" id="edit-status-published">
+                <span>প্রকাশিত (Published)</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" name="edit-post-status" value="draft" id="edit-status-draft">
+                <span>খসড়া (Draft)</span>
+              </label>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="submit" class="btn-primary" style="flex: 1;" id="update-post-btn">
+              আপডেট সংরক্ষণ করুন
+            </button>
+            <button type="button" class="btn-secondary" onclick="closeEditModal()">
+              বাতিল
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- BOTTOM NAVIGATION BAR -->
+    <!-- ============================================== -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" onclick="switchTab('home')" id="nav-btn-home">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">হোম</span>
+      </button>
+
+      <button class="nav-item" onclick="switchTab('search')" id="nav-btn-search">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-label">অনুসন্ধান</span>
+      </button>
+
+      <button class="nav-item" onclick="switchTab('categories')" id="nav-btn-categories">
+        <span class="nav-icon">📂</span>
+        <span class="nav-label">বিভাগ</span>
+      </button>
+
+      <button class="nav-item" onclick="switchTab('saved')" id="nav-btn-saved">
+        <span class="nav-icon">🔖</span>
+        <span class="nav-label">সংরক্ষিত</span>
+      </button>
+    </nav>
+
+    <!-- Toast Notification Popup -->
+    <div class="toast-container">
+      <div id="app-toast" class="toast">
+        <span id="toast-icon">📋</span>
+        <span id="toast-message">স্ট্যাটাস কপি করা হয়েছে!</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="firebase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

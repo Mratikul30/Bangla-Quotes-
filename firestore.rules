@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // =========================================================================
+    // ADMIN CHECK HELPER FUNCTION
+    // Replace "YOUR_ADMIN_UID" with your actual Admin UID from Firebase Auth
+    // Or set your admin email here.
+    // =========================================================================
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.uid == "YOUR_ADMIN_UID" ||
+        request.auth.token.email == "30atikul@gmail.com"
+      );
+    }
+
+    // POSTS COLLECTION:
+    // Anyone (even unauthenticated) can read published posts.
+    // Only Admin can read drafts, create, update, or delete posts.
+    match /posts/{postId} {
+      allow read: if resource.data.status == 'published' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // CATEGORIES COLLECTION:
+    // Anyone can read categories.
+    // Only Admin can create, modify, or delete categories.
+    match /categories/{catId} {
+      allow read: true;
+      allow write: if isAdmin();
+    }
+
+    // USER LIKES COLLECTION:
+    // Any authenticated user (including anonymous) can manage only their own like records.
+    match /userLikes/{likeId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // USER SAVED POSTS COLLECTION:
+    // Any authenticated user can manage only their own saved/bookmarked records.
+    match /userSavedPosts/{saveId} {
+      allow read, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+
+    // SETTINGS COLLECTION:
+    // Only Admin can access app settings.
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
